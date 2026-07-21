@@ -3,8 +3,18 @@
 A status line for [Claude Code](https://claude.com/claude-code) with **account-usage bars straight from Anthropic's own server-side counter** — plus live-togglable segments, controlled from your shell or from inside Claude Code via a `/sl` slash command.
 
 ```
-~/code/app [main *] | Opus | ctx:42% | #7 | 7d▕██░░░░░░░░▏20% · Opus▕██▊░░░░░░░▏27% · 5h▕████▉░░░░░▏49% Reset 1h8m
+╭─ Claude Code ────────────────────────────────────────────────────────── ~/code/app ─╮
+
+   ❯ explain this repo
+   ⏺ It's a status line for Claude Code with server-side usage bars…
+
+   ──────────────────────────────────────────────────────────────────
+   ~/code/app [main *] │ Opus │ ctx:42% │ #7 │ 7d▕██░░▏20% · 5h▕███░░▏49% Reset 1h8m
+╰─────────────────────────────────────────────────────────────────────────────────────╯
 ```
+
+(The status line is the last row; bars are green / amber / red by fill in a real
+terminal.)
 
 - **Usage bars show what Anthropic bills, not what ran locally.** The `claude-usage` component reads the same OAuth usage endpoint that claude.ai → Settings → Usage shows, covering *all* usage on the account (Claude Code on any machine + claude.ai) — unlike transcript-based tools that only see the current box. Works for both plan shapes: USD-budget seats render `$300.04/$300 ▕████▏100%`, Max/Pro seats render their 7d/model/5h rate-limit windows.
 - **Never blocks your prompt.** The statusline only ever reads a cache; refreshes happen in a detached background process with stale-while-revalidate semantics, failure backoff, and lock-guarded fetches.
