@@ -26,10 +26,16 @@ A status line for [Claude Code](https://claude.com/claude-code) with **account-u
 
 ## Install
 
-Requirements: `zsh`, `jq`, `curl`. (The statusline script itself is POSIX `sh`; zsh is used for the usage fetcher and the toggle helper.)
+Requirements: `zsh`, `jq`, `curl`. (The statusline script itself is POSIX `sh`; zsh is used for the toggle helper and the usage fetcher.)
+
+The account-usage bars are provided by the companion
+[**claude-usage**](https://github.com/deviationist/claude-usage) project. Clone
+it as a **sibling** of this repo and the statusline finds it automatically; skip
+it if you don't want the usage segment (everything else still works).
 
 ```sh
 git clone https://github.com/deviationist/claude-statusline.git ~/code/claude-statusline
+git clone https://github.com/deviationist/claude-usage.git       ~/code/claude-usage   # optional: usage bars
 ```
 
 1. **Statusline** — in `~/.claude/settings.json`:
@@ -44,9 +50,13 @@ git clone https://github.com/deviationist/claude-statusline.git ~/code/claude-st
 2. **Shell helpers** — in `~/.zshrc`:
 
    ```sh
-   source ~/code/claude-statusline/claude-usage.zsh   # claude-usage CLI
    source ~/code/claude-statusline/statusline.zsh     # statusline toggle helper
+   source ~/code/claude-usage/claude-usage.zsh        # claude-usage CLI (optional, from the sibling repo)
    ```
+
+   The statusline locates `claude-usage.zsh` automatically when the
+   `claude-usage` repo is cloned next to this one. If you keep it elsewhere,
+   point `CLAUDE_USAGE_SCRIPT` at the file (e.g. in `settings.json`'s `"env"`).
 
 3. **`/sl` slash command** (optional) — symlink it into Claude Code's commands dir:
 
@@ -77,23 +87,12 @@ CLAUDE_STATUSLINE_SEP=" · "      # separator between usage bars
 
 Anything the config doesn't set falls back to the same-named process environment variable (e.g. from `settings.json`'s `"env"` block — restart-bound), then defaults to shown.
 
-## `claude-usage` standalone
+## `claude-usage`
 
-```
-claude-usage                          # colour progress bars (default)
-claude-usage --text-only              # plain one-liner: "7d 16% | Opus 25% | 5h 4% Reset 4h45m"
-claude-usage --json                   # machine-readable summary for scripts
-claude-usage --raw                    # full untouched endpoint response
-claude-usage --fresh                  # blocking refresh, guaranteed current
-claude-usage --no-block               # statusline mode: never blocks, silent on cold/broken state
-claude-usage --dir PATH               # another account's Claude config dir
-claude-usage --sep ' / '              # custom metric delimiter
-claude-usage --show-reset=false       # drop the reset countdown
-```
-
-Account resolution: `--dir` > `$CLAUDE_USAGE_DIR` > `$CLAUDE_CONFIG_DIR` > `~/.claude`. The OAuth token is read from `<dir>/.credentials.json` or, on macOS, the Keychain entry Claude Code itself maintains (per-account namespaced; the freshest non-expired token wins).
-
-Caching is per account under `$TMPDIR`: bare calls return instantly from cache and revalidate in the background after a 120s TTL (override via `CLAUDE_USAGE_TTL`); failed refreshes never destroy the last known value and back off for 60s so a constantly-repainting statusline can't hammer the endpoint.
+The usage bars are a separate, standalone tool with its own CLI (`--text-only`,
+`--json`, `--raw`, `--dir`, per-account tokens, stale-while-revalidate caching)
+— see the [**claude-usage**](https://github.com/deviationist/claude-usage) repo
+for full docs. The statusline just calls it in `--no-block` mode.
 
 ## Caveats
 

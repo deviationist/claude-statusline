@@ -39,8 +39,19 @@ USAGE_BAR_WIDTH="${CLAUDE_STATUSLINE_BAR_WIDTH:-10}"
 USAGE_SEP="${CLAUDE_STATUSLINE_SEP:- · }"
 # -----------------------------------------------------------------------------
 
-# claude-usage.zsh lives next to this script, wherever the repo is cloned.
+# claude-usage.zsh ships as its own repo (github.com/deviationist/claude-usage).
+# Locate it, in order: $CLAUDE_USAGE_SCRIPT override → a sibling clone next to
+# this repo (../claude-usage/) → same dir (legacy single-repo layout). Left
+# empty if not found, in which case the usage segment is simply skipped.
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+USAGE_SCRIPT="${CLAUDE_USAGE_SCRIPT:-}"
+if [ -z "$USAGE_SCRIPT" ]; then
+  for _cand in \
+    "$SCRIPT_DIR/../claude-usage/claude-usage.zsh" \
+    "$SCRIPT_DIR/claude-usage.zsh"; do
+    [ -f "$_cand" ] && { USAGE_SCRIPT="$_cand"; break; }
+  done
+fi
 
 input=$(cat)
 
@@ -113,7 +124,7 @@ fi
 # network on the statusline thread (the helper refreshes in the background on
 # its own TTL).
 usage_info=""
-if [ "$SHOW_USAGE" = 1 ] && command -v zsh >/dev/null 2>&1; then
+if [ "$SHOW_USAGE" = 1 ] && [ -n "$USAGE_SCRIPT" ] && command -v zsh >/dev/null 2>&1; then
   # Which account? Prefer the explicit config dir, else derive it from the
   # transcript path (<config_dir>/projects/...), else let the helper self-resolve.
   config_dir="${CLAUDE_CONFIG_DIR:-}"
@@ -126,13 +137,13 @@ if [ "$SHOW_USAGE" = 1 ] && command -v zsh >/dev/null 2>&1; then
   [ "$SHOW_RESET" = 0 ] && show_reset=false
 
   usage_out=$(CLAUDE_USAGE_BAR_WIDTH="$USAGE_BAR_WIDTH" zsh -c '
-    source "$4/claude-usage.zsh" 2>/dev/null || exit 0
+    source "$4" 2>/dev/null || exit 0
     if [ -n "$1" ]; then
       claude-usage --dir "$1" --pretty --sep "$2" --show-reset="$3" --no-block 2>/dev/null
     else
       claude-usage --pretty --sep "$2" --show-reset="$3" --no-block 2>/dev/null
     fi
-  ' _ "$config_dir" "$USAGE_SEP" "$show_reset" "$SCRIPT_DIR")
+  ' _ "$config_dir" "$USAGE_SEP" "$show_reset" "$USAGE_SCRIPT")
 
   [ -n "$usage_out" ] && usage_info=" | $usage_out"
 fi
