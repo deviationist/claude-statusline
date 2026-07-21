@@ -93,7 +93,7 @@ claude-usage --show-reset=false       # drop the reset countdown
 
 Account resolution: `--dir` > `$CLAUDE_USAGE_DIR` > `$CLAUDE_CONFIG_DIR` > `~/.claude`. The OAuth token is read from `<dir>/.credentials.json` or, on macOS, the Keychain entry Claude Code itself maintains (per-account namespaced; the freshest non-expired token wins).
 
-Caching is per account under `$TMPDIR`: bare calls return instantly from cache and revalidate in the background after a 300s TTL; failed refreshes never destroy the last known value and back off for 60s so a constantly-repainting statusline can't hammer the endpoint.
+Caching is per account under `$TMPDIR`: bare calls return instantly from cache and revalidate in the background after a 120s TTL (override via `CLAUDE_USAGE_TTL`); failed refreshes never destroy the last known value and back off for 60s so a constantly-repainting statusline can't hammer the endpoint.
 
 ## Caveats
 

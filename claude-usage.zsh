@@ -24,6 +24,8 @@
 #           CLAUDE_USAGE_DIVISOR   credits→dollars divisor (default: 100 = cents)
 #           CLAUDE_USAGE_BAR_WIDTH cells per bar in --pretty (default: 10)
 #           CLAUDE_USAGE_SEP       metric delimiter, both modes (default: per-mode)
+#           CLAUDE_USAGE_TTL       cache max age in seconds before a background
+#                                  refresh is triggered (default: 120)
 #
 # Output:   Default (--pretty), USD cap:  "$300.04/$300 ▕████▏100%"
 #           Default (--pretty), Max/Pro:  "7d▕██░░▏40% · opus▕███░▏63% · 5h▕█░░░░▏12% Reset 4h45m"
@@ -35,8 +37,9 @@
 # Caching:  stale-while-revalidate, PER ACCOUNT (cache file is derived from the
 #           config dir, so multiple accounts never clobber each other). Bare
 #           invocations always return immediately from cache; if older than
-#           $ttl (300s), a detached background refresh runs and the NEXT call
-#           sees the new value. Failed refreshes never destroy the last known
+#           $ttl (default 120s, override via CLAUDE_USAGE_TTL), a detached
+#           background refresh runs and the NEXT call sees the new value.
+#           Failed refreshes never destroy the last known
 #           value, and back off for 60s so a broken state doesn't hammer
 #           the endpoint from a constantly-repainting statusline.
 #
@@ -175,7 +178,7 @@ _claude_usage_refresh() {
 # ----------------------------------------------------------------------------
 claude-usage() {
   emulate -L zsh
-  local ttl=300 mode=pretty force=0 noblock=0 show_reset=true
+  local ttl="${CLAUDE_USAGE_TTL:-120}" mode=pretty force=0 noblock=0 show_reset=true
   local divisor="${CLAUDE_USAGE_DIVISOR:-1}"
   local bar_width="${CLAUDE_USAGE_BAR_WIDTH:-10}"
   # Separator between metrics. Empty → per-mode default (" | " text, " · " pretty).
