@@ -2,19 +2,14 @@
 
 A status line for [Claude Code](https://claude.com/claude-code) with **account-usage bars straight from Anthropic's own server-side counter** — plus live-togglable segments, controlled from your shell or from inside Claude Code via a `/sl` slash command.
 
-```
-╭─ Claude Code ────────────────────────────────────────────────────────── ~/code/app ─╮
+<p align="center">
+  <img src="assets/statusline-96423e.svg" alt="claude-statusline in a Claude Code session: cwd, git branch, model, context %, PR link and account-usage bars, rendered under the input box">
+</p>
 
-   ❯ explain this repo
-   ⏺ It's a status line for Claude Code with server-side usage bars…
-
-   ──────────────────────────────────────────────────────────────────
-   ~/code/app [main *] │ Opus │ ctx:42% │ #7 │ 7d▕██░░▏20% · 5h▕███░░▏49% Reset 1h8m
-╰─────────────────────────────────────────────────────────────────────────────────────╯
-```
-
-(The status line is the last row; bars are green / amber / red by fill in a real
-terminal.)
+(The status line row is genuine output — `tools/generate-readme-svg.zsh` seeds
+demo caches and pipes Claude Code's own statusline JSON through
+`statusline-command.sh`, then converts the ANSI colours to SVG. Only the window
+and the conversation above it are drawn. Bars are green / amber / red by fill.)
 
 - **Usage bars show what Anthropic bills, not what ran locally.** The `claude-usage` component reads the same OAuth usage endpoint that claude.ai → Settings → Usage shows, covering *all* usage on the account (Claude Code on any machine + claude.ai) — unlike transcript-based tools that only see the current box. Works for both plan shapes: USD-budget seats render `$300.04/$300 ▕████▏100%`, Max/Pro seats render their 7d/model/5h rate-limit windows.
 - **Never blocks your prompt.** The statusline only ever reads a cache; refreshes happen in a detached background process with stale-while-revalidate semantics, failure backoff, and lock-guarded fetches.
@@ -34,6 +29,12 @@ terminal.)
 | `usage` | account spend / rate-limit bars | `CLAUDE_STATUSLINE_USAGE` |
 | `reset` | 5h-session reset countdown (rendered inside `usage`) | `CLAUDE_STATUSLINE_RESET` |
 | `profile` | seat label (`Personal (Max 5x)`) ahead of the bars — needs [claude-profile](https://github.com/deviationist/claude-profile) | `CLAUDE_STATUSLINE_PROFILE` |
+
+Every row below is a real render, one per plan shape and toggle combination:
+
+<p align="center">
+  <img src="assets/segments-96423e.svg" alt="the status line rendered for a Max/Pro seat, a USD-budget seat, a seat with usage credits, with the seat label, over SSH with a hostname prefix, pared back, and with the usage segment off">
+</p>
 
 ### Which subscription am I burning? (`profile`)
 
