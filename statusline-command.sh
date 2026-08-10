@@ -17,7 +17,8 @@
 # ---- config -----------------------------------------------------------------
 # Per-machine config: plain POSIX "NAME=value" lines, sourced by sh and zsh
 # alike. Created/edited by the `statusline` helper — no need to touch by hand.
-#   CLAUDE_STATUSLINE_USAGE / RESET / MODEL / CTX / GIT / PR / HOST = 0|1
+#   CLAUDE_STATUSLINE_USAGE / RESET / PROFILE / MODEL / CTX / GIT / PR / HOST
+#                               = 0|1   (PROFILE defaults to 0, the rest to 1)
 #   CLAUDE_STATUSLINE_BAR_WIDTH = cells per usage bar          (default 10)
 #   CLAUDE_STATUSLINE_SEP       = separator between usage bars (default " · ")
 # Config values win over same-named process-env vars (e.g. settings.json
@@ -34,6 +35,14 @@ SHOW_CTX=$(norm "${CLAUDE_STATUSLINE_CTX:-1}")
 SHOW_PR=$(norm "${CLAUDE_STATUSLINE_PR:-1}")
 SHOW_USAGE=$(norm "${CLAUDE_STATUSLINE_USAGE:-1}")
 SHOW_RESET=$(norm "${CLAUDE_STATUSLINE_RESET:-1}")
+# Which subscription is this session burning? Rendered by claude-usage at the
+# head of its own segment ("Personal (Max 5x) 7d▕…"), resolved from the
+# companion claude-profile tool. Effectively AUTO: on by default, but
+# claude-usage renders nothing unless claude-profile is installed AND claims
+# the session's config dir — so this costs machines without the juggler
+# nothing and needs no manual flip on machines with it. `statusline profile
+# off` forces it off.
+SHOW_PROFILE=$(norm "${CLAUDE_STATUSLINE_PROFILE:-1}")
 
 USAGE_BAR_WIDTH="${CLAUDE_STATUSLINE_BAR_WIDTH:-10}"
 USAGE_SEP="${CLAUDE_STATUSLINE_SEP:- · }"
@@ -136,13 +145,23 @@ if [ "$SHOW_USAGE" = 1 ] && [ -n "$USAGE_SCRIPT" ] && command -v zsh >/dev/null 
   show_reset=true
   [ "$SHOW_RESET" = 0 ] && show_reset=false
 
-  usage_out=$(CLAUDE_USAGE_BAR_WIDTH="$USAGE_BAR_WIDTH" zsh -c '
+  # Same deal for the seat label — except it travels as an ENV var, not a
+  # flag. claude-usage defaults the label OFF (it's an opt-in bridge to a
+  # second tool); the statusline is the consumer that wants it on, so it asks
+  # for it here. Env rather than --show-profile so a statusline paired with an
+  # older claude-usage keeps working: an unknown env var is ignored, whereas
+  # an unknown flag would exit 1 and take the whole usage segment with it.
+  # (claude-usage's own config file still wins over this, by its documented
+  # flags > config > env precedence.)
+  show_profile=false
+  [ "$SHOW_PROFILE" = 1 ] && show_profile=true
+
+  usage_out=$(CLAUDE_USAGE_BAR_WIDTH="$USAGE_BAR_WIDTH" \
+              CLAUDE_USAGE_SHOW_PROFILE="$show_profile" zsh -c '
     source "$4" 2>/dev/null || exit 0
-    if [ -n "$1" ]; then
-      claude-usage --dir "$1" --pretty --sep "$2" --show-reset="$3" --no-block 2>/dev/null
-    else
-      claude-usage --pretty --sep "$2" --show-reset="$3" --no-block 2>/dev/null
-    fi
+    args=( --pretty --sep "$2" --show-reset="$3" --no-block )
+    [[ -n "$1" ]] && args=( --dir "$1" "${args[@]}" )
+    claude-usage "${args[@]}" 2>/dev/null
   ' _ "$config_dir" "$USAGE_SEP" "$show_reset" "$USAGE_SCRIPT")
 
   [ -n "$usage_out" ] && usage_info=" | $usage_out"
