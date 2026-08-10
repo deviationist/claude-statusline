@@ -15,7 +15,9 @@
 #           statusline reset toggle         # flip the 5h reset countdown
 #           statusline <seg> [on|off|toggle|status]
 #
-# Segments: usage reset model ctx git pr host   (cwd is always shown)
+# Segments: usage reset profile model ctx git pr host   (cwd is always shown)
+#           `profile` is the odd one out: OFF unless switched on, since it
+#           needs the companion claude-profile tool to mean anything.
 #
 # Also exposed as the /sl slash command in Claude Code — see commands/sl.md.
 #
@@ -26,16 +28,21 @@
 statusline() {
   emulate -L zsh
   local cfg="${CLAUDE_STATUSLINE_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/claude-statusline/config}"
-  local -a segs=(usage reset model ctx git pr host)
+  local -a segs=(usage reset profile model ctx git pr host)
   local -A desc=(
-    usage "account-usage bars (spend / rate limits)"
-    reset "5h-session reset countdown (inside the usage segment)"
-    model "model name"
-    ctx   "context-window %"
-    git   "git branch + dirty marker"
-    pr    "PR number/link"
-    host  "hostname prefix (Linux hosts only)"
+    usage   "account-usage bars (spend / rate limits)"
+    reset   "5h-session reset countdown (inside the usage segment)"
+    profile "seat label, e.g. Personal (Max 5x) — needs claude-profile"
+    model   "model name"
+    ctx     "context-window %"
+    git     "git branch + dirty marker"
+    pr      "PR number/link"
+    host    "hostname prefix (Linux hosts only)"
   )
+  # Unset means shown. That includes `profile`: claude-usage renders the label
+  # only when claude-profile is installed and claims the session's config dir,
+  # so "on" is self-disabling rather than noisy — no flip needed to get it,
+  # one flip to refuse it.
   local seg="${1:-status}" action="${2:-status}"
 
   # Current values, one subshell pass: source the config with every toggle
@@ -53,7 +60,7 @@ statusline() {
 
   if [[ $seg == status ]]; then
     for s in $segs; do
-      printf '%-6s %-3s  %s\n' "$s" \
+      printf '%-7s %-3s  %s\n' "$s" \
         "$( [[ ${cur[$s]} == 0 ]] && print off || print on )" "${desc[$s]}"
     done
     return 0

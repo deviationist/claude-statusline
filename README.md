@@ -33,6 +33,29 @@ terminal.)
 | `pr` | PR number (OSC 8 hyperlink when the terminal supports it) | `CLAUDE_STATUSLINE_PR` |
 | `usage` | account spend / rate-limit bars | `CLAUDE_STATUSLINE_USAGE` |
 | `reset` | 5h-session reset countdown (rendered inside `usage`) | `CLAUDE_STATUSLINE_RESET` |
+| `profile` | seat label (`Personal (Max 5x)`) ahead of the bars — needs [claude-profile](https://github.com/deviationist/claude-profile) | `CLAUDE_STATUSLINE_PROFILE` |
+
+### Which subscription am I burning? (`profile`)
+
+With several Claude subscriptions on one machine, the bars alone don't say
+*whose* they are. If the companion
+[**claude-profile**](https://github.com/deviationist/claude-profile) juggler is
+installed, the seat is named ahead of them:
+
+```
+~/code/app [main] | Opus 5 | ctx:12% | Personal (Max 5x) 7d▕██░░░░░░░░▏20% · 5h▕███░░░░░░░▏49% 1h8m
+```
+
+It is **on by default but self-disabling**: the statusline asks `claude-usage`
+for a label, `claude-usage` asks `claude-profile` once — by the session's
+config dir, not the cwd — and caches the answer. With no juggler installed, or
+none that claims the dir, nothing is rendered and nothing is said. So there's
+no flip to remember on a machine that has it, and no cost on one that doesn't.
+`statusline profile off` refuses it outright.
+
+The name and its casing come from claude-profile's own config (`display` /
+`account_display`), not from here — and a profile holding a single
+subscription renders as just `Personal`, without the parentheses.
 
 ## Install
 
