@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ---------------------------------------------------------------------------
-# tools/generate-readme-svg.zsh — regenerate the README hero + segments SVGs.
+# tools/generate-readme-svg.zsh — regenerate the README SVGs.
 #
 # Renders the REAL status line into SVG terminal windows: builds a hermetic
 # sandbox (fake $HOME, a throwaway git repo, seeded claude-usage caches — no
@@ -15,10 +15,10 @@
 # ANSI→SVG core here is borrowed; keep the two roughly in sync.
 #
 # Usage:  zsh tools/generate-readme-svg.zsh
-#           → assets/statusline-<hash>.svg + assets/segments-<hash>.svg,
-#             older ones deleted, README <img> references rewritten (the
-#             random hash busts GitHub's camo image cache). Commit all three.
-#         zsh tools/generate-readme-svg.zsh HERO.svg SEGMENTS.svg
+#           → assets/{statusline,segments,profile}-<hash>.svg, older ones
+#             deleted, README <img> references rewritten (the random hash
+#             busts GitHub's camo image cache). Commit all four files.
+#         zsh tools/generate-readme-svg.zsh HERO.svg SEGMENTS.svg PROFILE.svg
 #           → fixed paths, README untouched.
 #
 # Requires the companion claude-usage repo (sibling clone, or point
@@ -316,6 +316,7 @@ typeset -a BOX_ROWS=(6 6)
 LABEL='Personal (Max 5x)'
 g_profile=$(render max "Opus 5" 42 -)
 LABEL=''
+g_plain=$(render max   "Opus 5"   42 -)   # same seat as g_profile, unlabelled
 g_max=$(render   max   "Opus 5"   42 7)
 g_work=$(render  work  "Sonnet 5" 12 -)
 g_combo=$(render combo "Fable 5"  63 -)
@@ -351,26 +352,38 @@ segments_lines=(
   "a|$g_local"
 )
 
+# ---- profile close-up: the same seat, with and without the label -----------
+# Illustrates the one thing the `profile` section is about — that the bars
+# alone don't say WHOSE they are. Same account, same numbers, one variable.
+profile_lines=(
+  'c|# bars alone — accurate, but whose seat are they?'
+  "a|$g_plain"
+  'b|'
+  'c|# with claude-profile installed, claude-usage names the seat ahead of them'
+  "a|$g_profile"
+)
+
 # ---- write -----------------------------------------------------------------
 if [[ -n ${1:-} ]]; then
   emit_svg hero_lines "$1" 'Claude Code'
   print "wrote $1"
-  if [[ -n ${2:-} ]]; then
-    BOX_ROWS=()
-    emit_svg segments_lines "$2"
-    print "wrote $2"
-  fi
+  BOX_ROWS=()
+  if [[ -n ${2:-} ]]; then emit_svg segments_lines "$2"; print "wrote $2"; fi
+  if [[ -n ${3:-} ]]; then emit_svg profile_lines  "$3"; print "wrote $3"; fi
 else
   mkdir -p "$root/assets"
   local old
-  for old in "$root"/assets/statusline-*.svg(N) "$root"/assets/segments-*.svg(N); do rm -f "$old"; done
+  for old in "$root"/assets/statusline-*.svg(N) "$root"/assets/segments-*.svg(N) \
+             "$root"/assets/profile-*.svg(N); do rm -f "$old"; done
   local hash; hash=$(xxd -l3 -p /dev/urandom)
   emit_svg hero_lines "$root/assets/statusline-${hash}.svg" 'Claude Code'
   BOX_ROWS=()
   emit_svg segments_lines "$root/assets/segments-${hash}.svg"
+  emit_svg profile_lines  "$root/assets/profile-${hash}.svg"
   sed -i.bak \
     -e "s|assets/statusline-[^)\"]*\.svg|assets/statusline-${hash}.svg|" \
     -e "s|assets/segments-[^)\"]*\.svg|assets/segments-${hash}.svg|" \
+    -e "s|assets/profile-[^)\"]*\.svg|assets/profile-${hash}.svg|" \
     "$root/README.md" && rm -f "$root/README.md.bak"
-  print "wrote assets/{statusline,segments}-${hash}.svg and updated README.md"
+  print "wrote assets/{statusline,segments,profile}-${hash}.svg and updated README.md"
 fi
