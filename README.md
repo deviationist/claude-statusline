@@ -43,7 +43,7 @@ With several Claude subscriptions on one machine, the bars alone don't say
 installed, the seat is named ahead of them:
 
 ```
-~/code/app [main] | Opus 5 | ctx:12% | Personal (Max 5x) 7d▕██░░░░░░░░▏20% · 5h▕███░░░░░░░▏49% 1h8m
+~/code/app [main] | Opus 5 | ctx:12% | Personal (Max 5x) · 7d▕██░░░░░░░░▏20% · 5h▕███░░░░░░░▏49% 1h8m
 ```
 
 It is **on by default but self-disabling**: the statusline asks `claude-usage`
@@ -54,8 +54,11 @@ no flip to remember on a machine that has it, and no cost on one that doesn't.
 `statusline profile off` refuses it outright.
 
 The name and its casing come from claude-profile's own config (`display` /
-`account_display`), not from here — and a profile holding a single
-subscription renders as just `Personal`, without the parentheses.
+`account_display`), not from here. It names only what actually varies on the
+machine: with one profile and several subscriptions you get `Max 20x` (the
+profile name would be a constant), with several profiles you get
+`Personal (Max 20x)`, and with a single profile holding a single subscription
+you get nothing at all — there'd be nothing to tell apart.
 
 ## Install
 
@@ -76,9 +79,17 @@ git clone https://github.com/deviationist/claude-usage.git       ~/code/claude-u
    ```json
    "statusLine": {
      "type": "command",
-     "command": "bash /ABSOLUTE/PATH/TO/claude-statusline/statusline-command.sh"
+     "command": "bash /ABSOLUTE/PATH/TO/claude-statusline/statusline-command.sh",
+     "refreshInterval": 60
    }
    ```
+
+   `refreshInterval` is worth setting. Without it Claude Code repaints only
+   when something happens in the session, so anything that arrives *after*
+   the first paint — a usage cache warmed in the background, a seat label
+   resolved on its first run — sits invisible until you send a message. With
+   it, the line fills itself in. Every segment reads from a cache and the
+   whole render is local, so a 60-second repaint costs nothing.
 
 2. **Shell helpers** — in `~/.zshrc`:
 
