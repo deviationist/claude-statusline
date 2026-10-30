@@ -27,7 +27,7 @@ and the conversation above it are drawn. Bars are green / amber / red by fill.)
 | `ctx` | context-window used % | `CLAUDE_STATUSLINE_CTX` |
 | `pr` | PR number (OSC 8 hyperlink when the terminal supports it) | `CLAUDE_STATUSLINE_PR` |
 | `usage` | account spend / rate-limit bars | `CLAUDE_STATUSLINE_USAGE` |
-| `reset` | 5h-session reset countdown (rendered inside `usage`) | `CLAUDE_STATUSLINE_RESET` |
+| `reset` | 5h-session reset countdown (rendered inside `usage`; absent on Ultra, which has no 5h window) | `CLAUDE_STATUSLINE_RESET` |
 | `profile` | seat label (`Personal (Max 5x)`) ahead of the bars — needs [claude-profile](https://github.com/deviationist/claude-profile) | `CLAUDE_STATUSLINE_PROFILE` |
 
 Every row below is a real render, one per plan shape and toggle combination:

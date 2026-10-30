@@ -31,7 +31,7 @@ statusline() {
   local -a segs=(usage reset profile model ctx git pr host)
   local -A desc=(
     usage   "account-usage bars (spend / rate limits)"
-    reset   "5h-session reset countdown (inside the usage segment)"
+    reset   "5h-session reset countdown (inside usage; none on Ultra)"
     profile "seat label, e.g. Personal (Max 5x) — needs claude-profile"
     model   "model name"
     ctx     "context-window %"
