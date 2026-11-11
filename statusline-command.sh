@@ -36,7 +36,7 @@ SHOW_PR=$(norm "${CLAUDE_STATUSLINE_PR:-1}")
 SHOW_USAGE=$(norm "${CLAUDE_STATUSLINE_USAGE:-1}")
 SHOW_RESET=$(norm "${CLAUDE_STATUSLINE_RESET:-1}")
 # Which subscription is this session burning? Rendered by claude-usage at the
-# head of its own segment ("Personal (Max 5x) 7d▕…"), resolved from the
+# head of its own segment ("Personal (Pro) 7d▕…"), resolved from the
 # companion claude-profile tool. Effectively AUTO: on by default, but
 # claude-usage renders nothing unless claude-profile is installed AND claims
 # the session's config dir — so this costs machines without the juggler

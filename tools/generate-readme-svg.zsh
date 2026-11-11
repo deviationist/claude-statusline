@@ -88,7 +88,7 @@ seed combo '{"spend":{"enabled":true,"used":{"amount_minor":1250,"exponent":2},
 seed work '{"spend":{"enabled":true,"used":{"amount_minor":14250,"exponent":2},
   "limit":{"amount_minor":30000,"exponent":2},"percent":47.5}}'
 
-# The seat label ("Personal (Max 5x)") normally comes from the claude-profile
+# The seat label ("Personal (Pro)") normally comes from the claude-profile
 # juggler. We don't want a hard dependency on a third repo just to draw a
 # picture, so its answer is seeded straight into claude-usage's label sidecar
 # — the same file a real lookup would have written. Re-seeded before every
@@ -295,7 +295,7 @@ emit_svg() {
 # A mocked-up Claude Code session (chrome, drawn) whose last row is the real
 # status line (genuine output) — exactly where Claude Code paints it: under
 # the input box.
-LABEL='Personal (Max 5x)'
+LABEL='Personal (Pro)'
 hero_status=$(render max "Opus 5" 42 7)
 LABEL=''
 
@@ -313,7 +313,7 @@ hero_lines=(
 typeset -a BOX_ROWS=(6 6)
 
 # ---- gallery: one row per plan shape / toggle combination ------------------
-LABEL='Personal (Max 5x)'
+LABEL='Personal (Pro)'
 g_profile=$(render max "Opus 5" 42 -)
 LABEL=''
 g_plain=$(render max   "Opus 5"   42 -)   # same seat as g_profile, unlabelled

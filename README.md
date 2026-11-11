@@ -3,7 +3,7 @@
 A status line for [Claude Code](https://claude.com/claude-code) with **account-usage bars straight from Anthropic's own server-side counter** — plus live-togglable segments, controlled from your shell or from inside Claude Code via a `/sl` slash command.
 
 <p align="center">
-  <img src="assets/statusline-a0d3f9.svg" alt="claude-statusline in a Claude Code session: cwd, git branch, model, context %, PR link and account-usage bars, rendered under the input box">
+  <img src="assets/statusline-f746d3.svg" alt="claude-statusline in a Claude Code session: cwd, git branch, model, context %, PR link and account-usage bars, rendered under the input box">
 </p>
 
 (The status line row is genuine output — `tools/generate-readme-svg.zsh` seeds
@@ -28,12 +28,12 @@ and the conversation above it are drawn. Bars are green / amber / red by fill.)
 | `pr` | PR number (OSC 8 hyperlink when the terminal supports it) | `CLAUDE_STATUSLINE_PR` |
 | `usage` | account spend / rate-limit bars | `CLAUDE_STATUSLINE_USAGE` |
 | `reset` | 5h-session reset countdown (rendered inside `usage`; absent on Ultra, which has no 5h window) | `CLAUDE_STATUSLINE_RESET` |
-| `profile` | seat label (`Personal (Max 5x)`) ahead of the bars — needs [claude-profile](https://github.com/deviationist/claude-profile) | `CLAUDE_STATUSLINE_PROFILE` |
+| `profile` | seat label (`Personal (Pro)`) ahead of the bars — needs [claude-profile](https://github.com/deviationist/claude-profile) | `CLAUDE_STATUSLINE_PROFILE` |
 
 Every row below is a real render, one per plan shape and toggle combination:
 
 <p align="center">
-  <img src="assets/segments-a0d3f9.svg" alt="the status line rendered for a Max/Pro seat, a USD-budget seat, a seat with usage credits, with the seat label, over SSH with a hostname prefix, pared back, and with the usage segment off">
+  <img src="assets/segments-f746d3.svg" alt="the status line rendered for a Max/Pro seat, a USD-budget seat, a seat with usage credits, with the seat label, over SSH with a hostname prefix, pared back, and with the usage segment off">
 </p>
 
 ### Which subscription am I burning? (`profile`)
@@ -44,7 +44,7 @@ With several Claude subscriptions on one machine, the bars alone don't say
 installed, the seat is named ahead of them:
 
 <p align="center">
-  <img src="assets/profile-a0d3f9.svg" alt="the same seat rendered twice: usage bars on their own, then the same bars with the seat label Personal (Max 5x) in front of them">
+  <img src="assets/profile-f746d3.svg" alt="the same seat rendered twice: usage bars on their own, then the same bars with the seat label Personal (Pro) in front of them">
 </p>
 
 It is **on by default but self-disabling**: the statusline asks `claude-usage`
@@ -56,9 +56,9 @@ no flip to remember on a machine that has it, and no cost on one that doesn't.
 
 The name and its casing come from claude-profile's own config (`display` /
 `account_display`), not from here. It names only what actually varies on the
-machine: with one profile and several subscriptions you get `Max 20x` (the
+machine: with one profile and several subscriptions you get `Ultra` (the
 profile name would be a constant), with several profiles you get
-`Personal (Max 20x)`, and with a single profile holding a single subscription
+`Personal (Ultra)`, and with a single profile holding a single subscription
 you get nothing at all — there'd be nothing to tell apart.
 
 ## Install
