@@ -15,7 +15,7 @@
 #           statusline reset toggle         # flip the 5h reset countdown
 #           statusline <seg> [on|off|toggle|status]
 #
-# Segments: usage reset profile model ctx git pr host   (cwd is always shown)
+# Segments: usage reset profile model effort ctx git pr host   (cwd is always shown)
 #           `profile` is the odd one out: OFF unless switched on, since it
 #           needs the companion claude-profile tool to mean anything.
 #
@@ -28,12 +28,13 @@
 statusline() {
   emulate -L zsh
   local cfg="${CLAUDE_STATUSLINE_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/claude-statusline/config}"
-  local -a segs=(usage reset profile model ctx git pr host)
+  local -a segs=(usage reset profile model effort ctx git pr host)
   local -A desc=(
     usage   "account-usage bars (spend / rate limits)"
     reset   "5h-session reset countdown (inside usage; none on Ultra)"
     profile "seat label, e.g. Personal (Pro) — needs claude-profile"
     model   "model name"
+    effort  "reasoning effort level (low … max)"
     ctx     "context-window %"
     git     "git branch + dirty marker"
     pr      "PR number/link"

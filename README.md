@@ -24,6 +24,7 @@ and the conversation above it are drawn. Bars are green / amber / red by fill.)
 | `host` | hostname prefix — Linux only (for SSH'd sessions) | `CLAUDE_STATUSLINE_HOST` |
 | `git` | branch + red `*` dirty marker | `CLAUDE_STATUSLINE_GIT` |
 | `model` | model display name | `CLAUDE_STATUSLINE_MODEL` |
+| `effort` | session reasoning effort, after the model name (`Opus (high)`), or `effort:high` with `model` off; absent when the model has no effort parameter | `CLAUDE_STATUSLINE_EFFORT` |
 | `ctx` | context-window used % | `CLAUDE_STATUSLINE_CTX` |
 | `pr` | PR number (OSC 8 hyperlink when the terminal supports it) | `CLAUDE_STATUSLINE_PR` |
 | `usage` | account spend / rate-limit bars | `CLAUDE_STATUSLINE_USAGE` |

@@ -1,8 +1,8 @@
 #!/bin/sh
 # claude-statusline — Claude Code status line with server-side usage bars.
 #
-# Renders:  [host:]cwd [branch *] | model | ctx:N% | [#PR] | usage bars
-# e.g.      ~/code/app [main *] | Opus | ctx:42% | 7d▕██░░░▏20% · 5h▕███░░▏49% Reset 1h8m
+# Renders:  [host:]cwd [branch *] | model (effort) | ctx:N% | [#PR] | usage bars
+# e.g.      ~/code/app [main *] | Opus (high) | ctx:42% | 7d▕██░░░▏20% · 5h▕███░░▏49% Reset 1h8m
 #
 # Wire into Claude Code via ~/.claude/settings.json:
 #   "statusLine": {
@@ -17,7 +17,8 @@
 # ---- config -----------------------------------------------------------------
 # Per-machine config: plain POSIX "NAME=value" lines, sourced by sh and zsh
 # alike. Created/edited by the `statusline` helper — no need to touch by hand.
-#   CLAUDE_STATUSLINE_USAGE / RESET / PROFILE / MODEL / CTX / GIT / PR / HOST
+#   CLAUDE_STATUSLINE_USAGE / RESET / PROFILE / MODEL / EFFORT / CTX / GIT /
+#   PR / HOST
 #                               = 0|1   (PROFILE defaults to 0, the rest to 1)
 #   CLAUDE_STATUSLINE_BAR_WIDTH = cells per usage bar          (default 10)
 #   CLAUDE_STATUSLINE_SEP       = separator between usage bars (default " · ")
@@ -31,6 +32,7 @@ norm() { if [ "$1" = "0" ]; then echo 0; else echo 1; fi; }
 SHOW_HOST=$(norm "${CLAUDE_STATUSLINE_HOST:-1}")
 SHOW_GIT=$(norm "${CLAUDE_STATUSLINE_GIT:-1}")
 SHOW_MODEL=$(norm "${CLAUDE_STATUSLINE_MODEL:-1}")
+SHOW_EFFORT=$(norm "${CLAUDE_STATUSLINE_EFFORT:-1}")
 SHOW_CTX=$(norm "${CLAUDE_STATUSLINE_CTX:-1}")
 SHOW_PR=$(norm "${CLAUDE_STATUSLINE_PR:-1}")
 SHOW_USAGE=$(norm "${CLAUDE_STATUSLINE_USAGE:-1}")
@@ -66,6 +68,9 @@ input=$(cat)
 
 cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd')
 model=$(echo "$input" | jq -r '.model.display_name // ""')
+# Session effort level (low/medium/high/xhigh/max); absent when the model
+# doesn't support the effort parameter, in which case the segment is skipped.
+effort=$(echo "$input" | jq -r '.effort.level // empty')
 used=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 pr_number=$(echo "$input" | jq -r '.pr.number // ""')
 pr_url=$(echo "$input" | jq -r '.pr.url // ""')
@@ -107,10 +112,14 @@ if [ "$SHOW_CTX" = 1 ] && [ -n "$used" ]; then
   ctx_info=$(printf " | ctx:%s%%" "$(printf '%.0f' "$used")")
 fi
 
-# Model info
+# Model info, with the reasoning effort in parentheses: "Opus 5.5 (medium)".
+# With the model hidden, effort stands alone as "effort:medium".
 model_info=""
 if [ "$SHOW_MODEL" = 1 ] && [ -n "$model" ]; then
   model_info=" | $model"
+  [ "$SHOW_EFFORT" = 1 ] && [ -n "$effort" ] && model_info="$model_info ($effort)"
+elif [ "$SHOW_EFFORT" = 1 ] && [ -n "$effort" ]; then
+  model_info=" | effort:$effort"
 fi
 
 # PR link (OSC 8 hyperlink if URL available, plain number otherwise)
