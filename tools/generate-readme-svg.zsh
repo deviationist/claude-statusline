@@ -24,7 +24,7 @@
 # Requires the companion claude-usage repo (sibling clone, or point
 # $CLAUDE_USAGE_SCRIPT at claude-usage.zsh) — the usage bars are its output.
 # Regenerate whenever the segments, colours, or claude-usage renderers change.
-# Countdown values ("3d20h") are seeded stable; the monthly reset date
+# Countdown values ("3d4h") are seeded stable; the monthly reset date
 # ("Sep 1") tracks the month you run it in — fine for a demo.
 # ---------------------------------------------------------------------------
 emulate -L zsh
@@ -70,7 +70,7 @@ chmod +x "$tmp/bin/uname" "$tmp/bin/hostname"
 iso() { date -u -r "$1" +%Y-%m-%dT%H:%M:%S+00:00 2>/dev/null \
         || date -u -d "@$1" +%Y-%m-%dT%H:%M:%S+00:00 }
 now=$(date +%s)
-wk=$(iso $(( now + 3*86400 + 20*3600 + 30*60 )))   # → "3d20h"
+wk=$(iso $(( now + 3*86400 +  4*3600 + 30*60 )))   # → "3d4h"
 ss=$(iso $(( now + 1*3600 +  8*60 + 30 )))   # → "1h8m"
 
 seed() { mkdir -p "$tmp/$1"; print -r -- "$2" > "$TMPDIR/claude-oauth-usage.$1.json" }

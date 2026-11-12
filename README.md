@@ -3,7 +3,7 @@
 A status line for [Claude Code](https://claude.com/claude-code) with **account-usage bars straight from Anthropic's own server-side counter** — plus live-togglable segments, controlled from your shell or from inside Claude Code via a `/sl` slash command.
 
 <p align="center">
-  <img src="assets/statusline-b8f5a7.svg" alt="claude-statusline in a Claude Code session: cwd, git branch, model, context %, PR link and account-usage bars, rendered under the input box">
+  <img src="assets/statusline-ef3028.svg" alt="claude-statusline in a Claude Code session: cwd, git branch, model, context %, PR link and account-usage bars, rendered under the input box">
 </p>
 
 (The status line row is genuine output — `tools/generate-readme-svg.zsh` seeds
@@ -34,7 +34,7 @@ and the conversation above it are drawn. Bars are green / amber / red by fill.)
 Every row below is a real render, one per plan shape and toggle combination:
 
 <p align="center">
-  <img src="assets/segments-b8f5a7.svg" alt="the status line rendered for a Max/Pro seat, a USD-budget seat, a seat with usage credits, with the seat label, over SSH with a hostname prefix, pared back, and with the usage segment off">
+  <img src="assets/segments-ef3028.svg" alt="the status line rendered for a Max/Pro seat, a USD-budget seat, a seat with usage credits, with the seat label, over SSH with a hostname prefix, pared back, and with the usage segment off">
 </p>
 
 ### Which subscription am I burning? (`profile`)
@@ -45,7 +45,7 @@ With several Claude subscriptions on one machine, the bars alone don't say
 installed, the seat is named ahead of them:
 
 <p align="center">
-  <img src="assets/profile-b8f5a7.svg" alt="the same seat rendered twice: usage bars on their own, then the same bars with the seat label Personal (Pro) in front of them">
+  <img src="assets/profile-ef3028.svg" alt="the same seat rendered twice: usage bars on their own, then the same bars with the seat label Personal (Pro) in front of them">
 </p>
 
 It is **on by default but self-disabling**: the statusline asks `claude-usage`
