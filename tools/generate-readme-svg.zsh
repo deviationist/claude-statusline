@@ -112,10 +112,11 @@ render() {
   [[ $pr != - ]] && pr_json="{\"number\":$pr,\"url\":\"https://github.com/deviationist/claude-statusline/pull/$pr\"}"
 
   jq -nc --arg dir "$repo" --arg model "$model" --argjson ctx "$ctx" \
-         --argjson pr "$pr_json" --arg tr "$tmp/$acct/projects/-code-app/session.jsonl" \
+         --argjson pr "$pr_json" --arg effort "$EFFORT" --arg tr "$tmp/$acct/projects/-code-app/session.jsonl" \
     '{workspace:{current_dir:$dir},model:{display_name:$model},
       context_window:{used_percentage:$ctx},transcript_path:$tr}
-     + (if $pr == null then {} else {pr:$pr} end)' \
+     + (if $pr == null then {} else {pr:$pr} end)
+     + (if $effort == "" then {} else {effort:{level:$effort}} end)' \
   | env -i PATH="$PATH_EXTRA$PATH" HOME="$fakehome" TERM=xterm-256color \
         LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 \
         TMPDIR="$TMPDIR" \
@@ -126,6 +127,7 @@ render() {
         bash "$root/statusline-command.sh"
 }
 LABEL=''          # no seat label unless a variant asks for one
+EFFORT='high'     # session reasoning effort → "Opus (high)"
 PATH_EXTRA=''     # no uname/hostname shim unless a variant asks for one
 
 # ---- ANSI → SVG ------------------------------------------------------------
