@@ -29,6 +29,7 @@ and the conversation above it are drawn. Bars are green / amber / red by fill.)
 | `pr` | PR number (OSC 8 hyperlink when the terminal supports it) | `CLAUDE_STATUSLINE_PR` |
 | `usage` | account spend / rate-limit bars | `CLAUDE_STATUSLINE_USAGE` |
 | `reset` | 5h-session reset countdown (rendered inside `usage`; absent on Ultra, which has no 5h window) | `CLAUDE_STATUSLINE_RESET` |
+| `budget` | daily budget on the monthly `$`-cap — what's left ÷ days until it resets, today included (`$300` cap, `$142.50` spent, 11 days left → `$14.32/day`). **Opt-in** (off by default); rendered inside `usage`, only where a `$`-cap is | `CLAUDE_STATUSLINE_BUDGET` |
 | `profile` | seat label (`Personal (Pro)`) ahead of the bars — needs [claude-profile](https://github.com/deviationist/claude-profile) | `CLAUDE_STATUSLINE_PROFILE` |
 
 Every row below is a real render, one per plan shape and toggle combination:
@@ -120,6 +121,7 @@ statusline                  # list all segments with their current state
 statusline usage off        # hide the account-usage bars
 statusline reset toggle     # flip the 5h reset countdown
 statusline model off        # hide the model name
+statusline budget on        # opt in to the $-cap daily budget ("$14.32/day")
 ```
 
 Inside Claude Code: `/sl`, `/sl usage off`, `/sl reset toggle`, …
