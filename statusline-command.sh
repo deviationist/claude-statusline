@@ -17,9 +17,9 @@
 # ---- config -----------------------------------------------------------------
 # Per-machine config: plain POSIX "NAME=value" lines, sourced by sh and zsh
 # alike. Created/edited by the `statusline` helper — no need to touch by hand.
-#   CLAUDE_STATUSLINE_USAGE / RESET / PROFILE / MODEL / EFFORT / CTX / GIT /
-#   PR / HOST
-#                               = 0|1   (PROFILE defaults to 0, the rest to 1)
+#   CLAUDE_STATUSLINE_USAGE / RESET / BUDGET / PROFILE / MODEL / EFFORT /
+#   CTX / GIT / PR / HOST
+#                               = 0|1   (BUDGET defaults to 0, the rest to 1)
 #   CLAUDE_STATUSLINE_BAR_WIDTH = cells per usage bar          (default 10)
 #   CLAUDE_STATUSLINE_SEP       = separator between usage bars (default " · ")
 # Config values win over same-named process-env vars (e.g. settings.json
@@ -37,6 +37,13 @@ SHOW_CTX=$(norm "${CLAUDE_STATUSLINE_CTX:-1}")
 SHOW_PR=$(norm "${CLAUDE_STATUSLINE_PR:-1}")
 SHOW_USAGE=$(norm "${CLAUDE_STATUSLINE_USAGE:-1}")
 SHOW_RESET=$(norm "${CLAUDE_STATUSLINE_RESET:-1}")
+# Daily budget on the monthly $-cap ("$14.32/day": what's left of the cap ÷
+# days left until it resets, today included). OPT-IN — the one segment that
+# defaults OFF. Rendered by claude-usage inside the usage segment, and only
+# where a $-cap renders (USD-budget seats, or Pro/Max/Ultra with usage
+# credits), so turning it on is harmless on a %-only seat.
+SHOW_BUDGET=0
+[ "${CLAUDE_STATUSLINE_BUDGET:-0}" = "1" ] && SHOW_BUDGET=1
 # Which subscription is this session burning? Rendered by claude-usage at the
 # head of its own segment ("Personal (Pro) 7d▕…"), resolved from the
 # companion claude-profile tool. Effectively AUTO: on by default, but
@@ -164,9 +171,13 @@ if [ "$SHOW_USAGE" = 1 ] && [ -n "$USAGE_SCRIPT" ] && command -v zsh >/dev/null 
   # flags > config > env precedence.)
   show_profile=false
   [ "$SHOW_PROFILE" = 1 ] && show_profile=true
+  # Daily budget: env for the same reason (older claude-usage ignores it).
+  show_budget=false
+  [ "$SHOW_BUDGET" = 1 ] && show_budget=true
 
   usage_out=$(CLAUDE_USAGE_BAR_WIDTH="$USAGE_BAR_WIDTH" \
-              CLAUDE_USAGE_SHOW_PROFILE="$show_profile" zsh -c '
+              CLAUDE_USAGE_SHOW_PROFILE="$show_profile" \
+              CLAUDE_USAGE_SHOW_DAILY_BUDGET="$show_budget" zsh -c '
     source "$4" 2>/dev/null || exit 0
     args=( --pretty --sep "$2" --show-reset="$3" --no-block )
     [[ -n "$1" ]] && args=( --dir "$1" "${args[@]}" )

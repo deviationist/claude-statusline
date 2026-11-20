@@ -13,11 +13,12 @@
 # Usage:    statusline                      # list all segments + state
 #           statusline usage off            # hide the account-usage bars
 #           statusline reset toggle         # flip the 5h reset countdown
+#           statusline budget on            # show "$14.32/day" on the $-cap
 #           statusline <seg> [on|off|toggle|status]
 #
-# Segments: usage reset profile model effort ctx git pr host   (cwd is always shown)
-#           `profile` is the odd one out: OFF unless switched on, since it
-#           needs the companion claude-profile tool to mean anything.
+# Segments: usage reset budget profile model effort ctx git pr host
+#           (cwd is always shown). `budget` is the one opt-in segment: OFF
+#           until switched on.
 #
 # Also exposed as the /sl slash command in Claude Code — see commands/sl.md.
 #
@@ -28,10 +29,13 @@
 statusline() {
   emulate -L zsh
   local cfg="${CLAUDE_STATUSLINE_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/claude-statusline/config}"
-  local -a segs=(usage reset profile model effort ctx git pr host)
+  local -a segs=(usage reset budget profile model effort ctx git pr host)
+  # Default when the config doesn't set a segment: shown, except opt-ins.
+  local -A dflt=(budget 0)
   local -A desc=(
     usage   "account-usage bars (spend / rate limits)"
     reset   "5h-session reset countdown (inside usage; none on Ultra)"
+    budget  "daily budget left on the \$-cap, e.g. \$14.32/day (opt-in)"
     profile "seat label, e.g. Personal (Pro) — needs claude-profile"
     model   "model name"
     effort  "reasoning effort level (low … max)"
@@ -55,7 +59,7 @@ statusline() {
     [[ -f $cfg ]] && source "$cfg" 2>/dev/null
     for s in $segs; do
       n="CLAUDE_STATUSLINE_${(U)s}"
-      print -r -- "$s ${${(P)n}:-1}"
+      print -r -- "$s ${${(P)n}:-${dflt[$s]:-1}}"
     done
   )"
 
