@@ -163,7 +163,8 @@ flip renders fresh. Files live per session in
 `$TMPDIR/claude-statusline-$USER/` (override with
 `$CLAUDE_STATUSLINE_MEMO_DIR`), a few hundred bytes each. Once an hour the
 status line deletes the ones untouched for a day, so ended sessions don't
-pile up.
+pile up. It only deletes its own files, so the override can point at a folder
+other things use too.
 
 ### Cache format
 

@@ -155,13 +155,23 @@ memo() {
 # At most once an hour (a stamp file, read with the builtin), delete memo
 # files untouched for a day, including temp files a cancelled run left
 # half-written. A live session just recomputes anything it loses.
+# Only our own files, at the top level: $CLAUDE_STATUSLINE_MEMO_DIR may point
+# at a folder other things use too. Always returns 0, because it runs last
+# and its status becomes the script's exit status (two sessions pruning at
+# once can make find fail on a file the other one already deleted).
 memo_prune() {
   [ -d "$memo_dir" ] || return 0
   _pts=0
   [ -f "$memo_dir/.pruned" ] && IFS= read -r _pts < "$memo_dir/.pruned"
   [ $(( now - ${_pts:-0} )) -ge 3600 ] 2>/dev/null || return 0
   printf '%s\n' "$now" > "$memo_dir/.pruned" 2>/dev/null
-  find "$memo_dir" -type f ! -name .pruned -mmin +1440 -delete 2>/dev/null
+  # Names are <session-id>.<segment>, or .<pid> on top while half-written.
+  find "$memo_dir" -maxdepth 1 -type f \
+    \( -name '????????-????-????-????-????????????.*' -o -name 'nosession.*' \) \
+    \( -name '*.git' -o -name '*.host' -o -name '*.usage' \
+       -o -name '*.git.[0-9]*' -o -name '*.host.[0-9]*' -o -name '*.usage.[0-9]*' \) \
+    -mmin +1440 -delete 2>/dev/null
+  return 0
 }
 # -----------------------------------------------------------------------------
 
