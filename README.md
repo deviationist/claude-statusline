@@ -68,6 +68,56 @@ you get nothing at all — there'd be nothing to tell apart.
 
 Requirements: `zsh`, `jq`, `curl`. (The statusline script itself is POSIX `sh`; zsh is used for the toggle helper and the usage fetcher.)
 
+### With Claude Code
+
+Paste this into Claude Code:
+
+> Set up claude-statusline for me. Clone https://github.com/deviationist/claude-statusline
+> into the folder where I keep my git repos (ask me if you're not sure), run its
+> `install.sh --dry-run` and show me what it would change. When I say yes, run
+> `install.sh`.
+
+### With the installer
+
+From the folder where you keep your git repos:
+
+```sh
+git clone https://github.com/deviationist/claude-statusline.git
+claude-statusline/install.sh --dry-run   # show what would change
+claude-statusline/install.sh
+```
+
+The installer sets up the recommended configuration, the one the author runs
+day to day:
+
+- **`statusLine` in `settings.json`**, repainting every second
+  (`refreshInterval: 1`) so the cache countdown ticks. That's cheap: the slow
+  segments are cached (see [caching](#caching)).
+- **[claude-usage](https://github.com/deviationist/claude-usage)** cloned next
+  to this repo, for the usage bars.
+- **The `budget` and `cache` segments switched on.** Both are off by default.
+  `budget` only shows on accounts with a monthly `$`-cap.
+- **The `/sl` slash command** linked into the config dir.
+- **The `statusline` and `claude-usage` shell commands** sourced from `~/.zshrc`.
+
+Every step checks first and skips what's already done, so re-running is safe.
+`settings.json` is backed up before it's changed, and a segment you've already
+switched on or off keeps your choice. It sets up `$CLAUDE_CONFIG_DIR` or
+`~/.claude`, or every profile dir if you use
+[claude-profile](https://github.com/deviationist/claude-profile).
+
+| Flag | Effect |
+|---|---|
+| `--dry-run` | Show what would change, change nothing |
+| `--minimal` | Plain defaults: `budget` and `cache` off, `refreshInterval: 60` |
+| `--config-dir DIR` | Set up this config dir instead (repeatable) |
+| `--no-usage` | Don't clone claude-usage (no usage bars) |
+| `--no-shell` | Don't touch `~/.zshrc`; print the lines to add instead |
+
+Afterwards, restart open Claude Code sessions and open a new shell.
+
+### By hand
+
 The account-usage bars are provided by the companion
 [**claude-usage**](https://github.com/deviationist/claude-usage) project. Clone
 it as a **sibling** of this repo and the statusline finds it automatically; skip
