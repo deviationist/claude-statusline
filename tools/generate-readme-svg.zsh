@@ -105,6 +105,10 @@ seed_label() { print -rn -- "$2" > "$TMPDIR/claude-oauth-usage.$1.json.label" }
 render() {
   local acct=$1 model=$2 ctx=$3 pr=$4; shift 4
   local cfg="$tmp/statusline-config"
+  # Each row gets a fresh memo dir (CLAUDE_STATUSLINE_MEMO_DIR below). The
+  # rows carry no session_id, so with a shared one they would all read the
+  # same "nosession" memo files: the host, git and usage segments of the
+  # first row would show up in every row after it.
   print -rl -- "$@" > "$cfg"
   seed_label "$acct" "$LABEL"
 
@@ -120,6 +124,7 @@ render() {
   | env -i PATH="$PATH_EXTRA$PATH" HOME="$fakehome" TERM=xterm-256color \
         LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 \
         TMPDIR="$TMPDIR" \
+        CLAUDE_STATUSLINE_MEMO_DIR="$(mktemp -d "$tmp/memo.XXXXXX")" \
         CLAUDE_STATUSLINE_CONFIG="$cfg" \
         CLAUDE_USAGE_SCRIPT="$usage_script" \
         CLAUDE_USAGE_CONFIG="$tmp/no-such-config" \
