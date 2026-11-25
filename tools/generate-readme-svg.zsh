@@ -60,7 +60,7 @@ print -r -- '# app' > "$repo/README.md"               # → the dirty marker "*"
 # shimmed on PATH for the one row that demonstrates an SSH session.
 mkdir -p "$tmp/bin"
 print '#!/bin/sh\n[ "$1" = -s ] && { echo Linux; exit 0; }\nexec /usr/bin/uname "$@"' > "$tmp/bin/uname"
-print '#!/bin/sh\necho xavi' > "$tmp/bin/hostname"
+print '#!/bin/sh\necho devbox' > "$tmp/bin/hostname"
 chmod +x "$tmp/bin/uname" "$tmp/bin/hostname"
 
 # ---- seed demo accounts ----------------------------------------------------
