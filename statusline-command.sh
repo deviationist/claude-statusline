@@ -150,6 +150,19 @@ memo() {
   printf '%s\n%s\n%s\n' "$now" "$_mkey" "$memo_out" > "$_mf.$$" 2>/dev/null \
     && mv -f "$_mf.$$" "$_mf" 2>/dev/null
 }
+
+# Cleanup: files are per session, so ended sessions leave theirs behind.
+# At most once an hour (a stamp file, read with the builtin), delete memo
+# files untouched for a day, including temp files a cancelled run left
+# half-written. A live session just recomputes anything it loses.
+memo_prune() {
+  [ -d "$memo_dir" ] || return 0
+  _pts=0
+  [ -f "$memo_dir/.pruned" ] && IFS= read -r _pts < "$memo_dir/.pruned"
+  [ $(( now - ${_pts:-0} )) -ge 3600 ] 2>/dev/null || return 0
+  printf '%s\n' "$now" > "$memo_dir/.pruned" 2>/dev/null
+  find "$memo_dir" -type f ! -name .pruned -mmin +1440 -delete 2>/dev/null
+}
 # -----------------------------------------------------------------------------
 
 # Shorten home directory to ~ (case pattern, no sed process)
@@ -369,3 +382,5 @@ fi
 
 printf "%s\033[33m%s\033[0m" "$host_info" "$short_cwd"
 printf "%s\033[0m%s%s%s%s%s" "$git_branch" "$model_info" "$ctx_info" "$cache_info" "$pr_info" "$usage_info"
+
+memo_prune

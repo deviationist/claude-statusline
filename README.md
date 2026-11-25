@@ -161,7 +161,9 @@ trail a change by up to its TTL (the `*` dirty marker, a branch switch).
 A cached entry is only reused for the same inputs: a new cwd or a toggle
 flip renders fresh. Files live per session in
 `$TMPDIR/claude-statusline-$USER/` (override with
-`$CLAUDE_STATUSLINE_MEMO_DIR`).
+`$CLAUDE_STATUSLINE_MEMO_DIR`), a few hundred bytes each. Once an hour the
+status line deletes the ones untouched for a day, so ended sessions don't
+pile up.
 
 ### Cache format
 
