@@ -61,12 +61,41 @@ todo() { if [ "$dry" = 1 ]; then printf '  would   %s\n' "$*"; else printf '  do
 warn() { printf '  \033[33mwarn\033[0m    %s\n' "$*"; }
 # ~/… for display and for lines written into ~/.zshrc
 tilde() { case "$1" in "$HOME"/*) printf '~/%s' "${1#"$HOME"/}" ;; *) printf '%s' "$1" ;; esac; }
-# Is FILE already sourced from the rc file? Matches the path as written
-# absolute, as ~/… or as $HOME/…
+nl='
+'
+# The rc file plus the files it sources directly (one level deep), so helpers
+# loaded through e.g. `source ~/.zsh/index.zsh` count as sourced too.
+rc_files() {
+  [ -f "$rc" ] || return 0
+  printf '%s\n' "$rc"
+  sed -nE 's/^[[:space:]]*(source|\.)[[:space:]]+//p' "$rc" | while IFS= read -r p; do
+    case "$p" in
+      \"*) p=${p#\"}; p=${p%%\"*} ;;
+      \'*) p=${p#\'}; p=${p%%\'*} ;;
+      *)   p=${p%%[[:space:]]*} ;;
+    esac
+    case "$p" in
+      "~/"*)       p="$HOME/${p#"~/"}" ;;
+      '$HOME/'*)   p="$HOME/${p#'$HOME/'}" ;;
+      '${HOME}/'*) p="$HOME/${p#'${HOME}/'}" ;;
+    esac
+    [ "$p" != "$rc" ] && [ -f "$p" ] && printf '%s\n' "$p"
+  done
+  return 0
+}
+# Is FILE already sourced from the rc file, or from a file it sources? Matches
+# the path as written absolute, as ~/… or as $HOME/…, and sets $found_in.
 sourced() {
-  [ -f "$rc" ] || return 1
   t=$(tilde "$1"); h=$(printf '%s' "$t" | sed 's|^~|$HOME|')
-  grep -qF -e "$1" -e "$t" -e "$h" "$rc"
+  _files=$(rc_files)
+  _ifs=$IFS; IFS=$nl
+  for _f in $_files; do
+    if grep -qF -e "$1" -e "$t" -e "$h" "$_f" 2>/dev/null; then
+      IFS=$_ifs; found_in=$_f; return 0
+    fi
+  done
+  IFS=$_ifs
+  return 1
 }
 expand() { case "$1" in "~") printf '%s' "$HOME" ;; "~/"*) printf '%s/%s' "$HOME" "${1#"~/"}" ;; *) printf '%s' "$1" ;; esac; }
 
@@ -118,8 +147,6 @@ else
 fi
 
 # --- per config dir: settings.json + /sl ------------------------------------
-nl='
-'
 old_ifs=$IFS; IFS=$nl
 for d in $dirs; do
   IFS=$old_ifs
@@ -196,14 +223,14 @@ if [ "$no_shell" = 1 ]; then
 else
   add=""
   if sourced "$REPO/statusline.zsh"; then
-    ok "statusline.zsh already sourced in $(tilde "$rc")"
+    ok "statusline.zsh already sourced in $(tilde "$found_in")"
   else
     add="${add}source \"$(tilde "$REPO" | sed 's|^~|$HOME|')/statusline.zsh\"
 "
   fi
   if [ "$no_usage" = 0 ]; then
     if sourced "$USAGE_DIR/claude-usage.zsh"; then
-      ok "claude-usage.zsh already sourced in $(tilde "$rc")"
+      ok "claude-usage.zsh already sourced in $(tilde "$found_in")"
     else
       add="${add}source \"$(tilde "$USAGE_DIR" | sed 's|^~|$HOME|')/claude-usage.zsh\"
 "
