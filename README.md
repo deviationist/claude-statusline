@@ -101,6 +101,8 @@ day to day:
 - **The `statusline` and `claude-usage` shell commands** sourced from `~/.zshrc`.
 
 Every step checks first and skips what's already done, so re-running is safe.
+Helpers you already source, from `~/.zshrc` or from a file it sources, aren't
+added again.
 `settings.json` is backed up before it's changed, and a segment you've already
 switched on or off keeps your choice. It sets up `$CLAUDE_CONFIG_DIR` or
 `~/.claude`, or every profile dir if you use
@@ -237,18 +239,50 @@ CLAUDE_STATUSLINE_CACHE_FORMAT='%mm%ss'    # format for that style
 
 Anything the config doesn't set falls back to the same-named process environment variable (e.g. from `settings.json`'s `"env"` block — restart-bound), then defaults to shown.
 
-## `claude-usage`
+## How it fits with claude-usage and claude-profile
 
-The usage bars are a separate, standalone tool with its own CLI (`--text-only`,
-`--json`, `--raw`, `--dir`, per-account tokens, stale-while-revalidate caching)
-— see the [**claude-usage**](https://github.com/deviationist/claude-usage) repo
-for full docs. The statusline just calls it in `--no-block` mode.
+Three repos, each useful on its own. None strictly needs another; each one
+you add switches on more of the line:
+
+```
+claude-statusline ──usage bars──▶ claude-usage ──seat label, --all──▶ claude-profile
+                                       ▲                                    │
+                                       └──── warms its cache on launch ─────┘
+```
+
+| Install | What you get |
+|---|---|
+| claude-statusline | cwd, git branch + PR, model, effort, context %, cache countdown |
+| + [claude-usage](https://github.com/deviationist/claude-usage) | the usage bars, with the `reset` and `budget` segments inside them. Also a `claude-usage` command for the terminal |
+| + [claude-profile](https://github.com/deviationist/claude-profile) | the `profile` seat label (`Personal (Pro)`), and bars that stay right after an account swap. Only worth it if you switch between several Claude subscriptions |
+
+So most people want claude-statusline + claude-usage, which is what
+[the installer](#with-the-installer) sets up. claude-profile doesn't need the
+statusline either: it's a `claude` wrapper, and when claude-usage is loaded it
+refreshes its cache at launch and after a swap so the bars are current.
+
+claude-usage is a standalone tool with its own CLI (`--text-only`, `--json`,
+`--raw`, `--dir`, per-account tokens, stale-while-revalidate caching); see
+its repo for full docs. The statusline just calls it in `--no-block` mode.
 
 ## Caveats
 
 - The usage endpoint (`api.anthropic.com/api/oauth/usage`) is **undocumented** and was reverse-engineered from Claude Code's own traffic. It may change or disappear without notice.
 - Keep the TTL sane — hammering the endpoint gets rate-limited. The defaults are tuned for a statusline that repaints often.
 - The tool only *reads* with the token Claude Code already stores locally; nothing is sent anywhere except the standard Anthropic API host.
+
+## Tests
+
+```sh
+sh test/run.sh
+```
+
+Hermetic: a fake `$HOME`, a scratch git repo and a stub claude-usage under a
+temp dir, each command run under `env -i`, no network. It covers the rendered
+line (segment order, PR link, toggles), the memo cleanup (what it deletes and
+keeps, the hourly gate, exit status) and the installer (dry run, re-runs,
+kept choices, `--minimal`, profile dirs, broken input). CI runs it on Linux
+and macOS.
 
 ## License
 

@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: tests (${{ matrix.os }})
+    # Both: the installer and the memo cleanup lean on find, sed, touch and
+    # mktemp, which differ between GNU and BSD. On Linux, sh is dash.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install zsh + jq (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y zsh jq
+      - name: Syntax check
+        run: |
+          sh -n install.sh
+          bash -n statusline-command.sh
+          zsh -n statusline.zsh
+          sh -n test/run.sh
+      - name: Run tests
+        run: sh test/run.sh
