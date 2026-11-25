@@ -26,6 +26,7 @@ and the conversation above it are drawn. Bars are green / amber / red by fill.)
 | `model` | model display name | `CLAUDE_STATUSLINE_MODEL` |
 | `effort` | session reasoning effort, after the model name (`Opus (high)`), or `effort:high` with `model` off; absent when the model has no effort parameter | `CLAUDE_STATUSLINE_EFFORT` |
 | `ctx` | context-window used % | `CLAUDE_STATUSLINE_CTX` |
+| `cache` | prompt-cache countdown: time until the conversation's cache goes cold (`cache:52m07s`, or the time it goes cold, `cache:until 14:32`; see [cache format](#cache-format); green → amber → red as it nears expiry), then `cache:cold 180k` with the tokens the next turn re-caches. A cold cache makes the next turn re-process the whole context, so this is a nudge to keep momentum. Read from Claude Code's own `prompt_cache` data (v2.1.251+), so it's exact, not estimated from the transcript. **Opt-in** (off by default) | `CLAUDE_STATUSLINE_CACHE` |
 | `pr` | PR number (OSC 8 hyperlink when the terminal supports it) | `CLAUDE_STATUSLINE_PR` |
 | `usage` | account spend / rate-limit bars | `CLAUDE_STATUSLINE_USAGE` |
 | `reset` | 5h-session reset countdown (rendered inside `usage`; absent on Ultra, which has no 5h window) | `CLAUDE_STATUSLINE_RESET` |
@@ -94,6 +95,14 @@ git clone https://github.com/deviationist/claude-usage.git       ~/code/claude-u
    it, the line fills itself in. Every segment reads from a cache and the
    whole render is local, so a 60-second repaint costs nothing.
 
+   With the `cache` segment on, a relative countdown only moves on a
+   repaint, so for ticking seconds set `refreshInterval` to `1`. That's
+   cheap: the slow segments are cached (see [caching](#caching)), so a
+   repaint costs about 20 ms. If you'd rather keep 60, use a minutes-only
+   format or the `clock` style (see [cache format](#cache-format)). Claude
+   Code also repaints the moment the cache expires, so `cold` shows up on
+   time either way.
+
 2. **Shell helpers** — in `~/.zshrc`:
 
    ```sh
@@ -122,6 +131,7 @@ statusline usage off        # hide the account-usage bars
 statusline reset toggle     # flip the 5h reset countdown
 statusline model off        # hide the model name
 statusline budget on        # opt in to the $-cap daily budget ("$14.32/day")
+statusline cache on         # opt in to the prompt-cache countdown ("cache:52m07s")
 ```
 
 Inside Claude Code: `/sl`, `/sl usage off`, `/sl reset toggle`, …
@@ -132,6 +142,45 @@ State is stored as plain `NAME=value` lines in `${XDG_CONFIG_HOME:-~/.config}/cl
 CLAUDE_STATUSLINE_BAR_WIDTH=10   # cells per usage bar
 CLAUDE_STATUSLINE_SEP=" · "      # separator between usage bars
 ```
+
+### Caching
+
+Claude Code re-runs the whole status line script on every repaint and
+keeps no cache of its own. So the slow segments cache their own output,
+nested: Anthropic's API → claude-usage's cache (~120 s) → the status line's
+cache → the line. Only the cheap parts (the `cache` countdown, model, ctx)
+are recomputed on every paint. A repaint drops from ~200 ms to ~20 ms.
+
+```sh
+CLAUDE_STATUSLINE_GIT_TTL=5      # seconds to reuse the git segment
+CLAUDE_STATUSLINE_USAGE_TTL=30   # seconds to reuse the usage segment
+```
+
+`0` recomputes that segment on every repaint. A cached git segment can
+trail a change by up to its TTL (the `*` dirty marker, a branch switch).
+A cached entry is only reused for the same inputs: a new cwd or a toggle
+flip renders fresh. Files live per session in
+`$TMPDIR/claude-statusline-$USER/` (override with
+`$CLAUDE_STATUSLINE_MEMO_DIR`).
+
+### Cache format
+
+How the `cache` segment reads while the cache is warm. Two config values:
+
+```sh
+CLAUDE_STATUSLINE_CACHE_STYLE=relative     # time left (default) | clock: when it goes cold
+CLAUDE_STATUSLINE_CACHE_FORMAT='%mm%ss'    # format for that style
+```
+
+| Style | Format | Shows |
+|---|---|---|
+| `relative` | `%mm%ss` (default) | `cache:52m07s` |
+| `relative` | `%mm` | `cache:52m` (minutes only: fine with `refreshInterval` 60) |
+| `relative` | `%M:%s` | `cache:52:07` |
+| `clock` | `until %H:%M` (default) | `cache:until 14:32` |
+| `clock` | `%H:%M:%S` | `cache:14:32:05` |
+
+`relative` tokens: `%m` minutes, `%M` minutes two-digit, `%s` seconds two-digit, `%t` total seconds, `%%` a literal `%`. `clock` takes any `strftime` format, in local time. The colour (green → amber → red) and `cold` work the same in both styles.
 
 Anything the config doesn't set falls back to the same-named process environment variable (e.g. from `settings.json`'s `"env"` block — restart-bound), then defaults to shown.
 
