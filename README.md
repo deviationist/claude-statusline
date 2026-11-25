@@ -3,7 +3,7 @@
 A status line for [Claude Code](https://claude.com/claude-code) with **account-usage bars straight from Anthropic's own server-side counter** — plus live-togglable segments, controlled from your shell or from inside Claude Code via a `/sl` slash command.
 
 <p align="center">
-  <img src="assets/statusline-9d154d.svg" alt="claude-statusline in a Claude Code session: cwd, git branch, model, context %, PR link and account-usage bars, rendered under the input box">
+  <img src="assets/statusline-39d8ae.svg" alt="claude-statusline in a Claude Code session: cwd, git branch and PR link, model, context % and account-usage bars, rendered under the input box">
 </p>
 
 (The status line row is genuine output — `tools/generate-readme-svg.zsh` seeds
@@ -23,11 +23,11 @@ and the conversation above it are drawn. Bars are green / amber / red by fill.)
 | cwd | working directory (`~`-shortened) | always on |
 | `host` | hostname prefix — Linux only (for SSH'd sessions) | `CLAUDE_STATUSLINE_HOST` |
 | `git` | branch + red `*` dirty marker | `CLAUDE_STATUSLINE_GIT` |
+| `pr` | PR number, right after the branch (`[main *] #7`); an OSC 8 hyperlink when the terminal supports it | `CLAUDE_STATUSLINE_PR` |
 | `model` | model display name | `CLAUDE_STATUSLINE_MODEL` |
 | `effort` | session reasoning effort, after the model name (`Opus (high)`), or `effort:high` with `model` off; absent when the model has no effort parameter | `CLAUDE_STATUSLINE_EFFORT` |
 | `ctx` | context-window used % | `CLAUDE_STATUSLINE_CTX` |
 | `cache` | prompt-cache countdown: time until the conversation's cache goes cold (`cache:52m07s`, or the time it goes cold, `cache:until 14:32`; see [cache format](#cache-format); green → amber → red as it nears expiry), then `cache:cold 180k` with the tokens the next turn re-caches. A cold cache makes the next turn re-process the whole context, so this is a nudge to keep momentum. Read from Claude Code's own `prompt_cache` data (v2.1.251+), so it's exact, not estimated from the transcript. **Opt-in** (off by default) | `CLAUDE_STATUSLINE_CACHE` |
-| `pr` | PR number (OSC 8 hyperlink when the terminal supports it) | `CLAUDE_STATUSLINE_PR` |
 | `usage` | account spend / rate-limit bars | `CLAUDE_STATUSLINE_USAGE` |
 | `reset` | 5h-session reset countdown (rendered inside `usage`; absent on Ultra, which has no 5h window) | `CLAUDE_STATUSLINE_RESET` |
 | `budget` | daily budget on the monthly `$`-cap — what's left ÷ days until it resets, today included (`$300` cap, `$142.50` spent, 11 days left → `$14.32/day`). **Opt-in** (off by default); rendered inside `usage`, only where a `$`-cap is | `CLAUDE_STATUSLINE_BUDGET` |
@@ -36,7 +36,7 @@ and the conversation above it are drawn. Bars are green / amber / red by fill.)
 Every row below is a real render, one per plan shape and toggle combination:
 
 <p align="center">
-  <img src="assets/segments-9d154d.svg" alt="the status line rendered for a Max/Pro seat, a USD-budget seat, a seat with usage credits, with the seat label, over SSH with a hostname prefix, pared back, and with the usage segment off">
+  <img src="assets/segments-39d8ae.svg" alt="the status line rendered for a Max/Pro seat, a USD-budget seat, a seat with usage credits, with the seat label, over SSH with a hostname prefix, pared back, and with the usage segment off">
 </p>
 
 ### Which subscription am I burning? (`profile`)
@@ -47,7 +47,7 @@ With several Claude subscriptions on one machine, the bars alone don't say
 installed, the seat is named ahead of them:
 
 <p align="center">
-  <img src="assets/profile-9d154d.svg" alt="the same seat rendered twice: usage bars on their own, then the same bars with the seat label Personal (Pro) in front of them">
+  <img src="assets/profile-39d8ae.svg" alt="the same seat rendered twice: usage bars on their own, then the same bars with the seat label Personal (Pro) in front of them">
 </p>
 
 It is **on by default but self-disabling**: the statusline asks `claude-usage`

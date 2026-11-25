@@ -311,13 +311,15 @@ elif [ "$SHOW_EFFORT" = 1 ] && [ -n "$effort" ]; then
   model_info=" | effort:$effort"
 fi
 
-# PR link (OSC 8 hyperlink if URL available, plain number otherwise)
+# PR link (OSC 8 hyperlink if URL available, plain number otherwise).
+# Rendered right after the branch with no separator, so the git items read
+# as one group: "~/repo [main *] #7 | Opus …".
 pr_info=""
 if [ "$SHOW_PR" = 1 ] && [ -n "$pr_number" ]; then
   if [ -n "$pr_url" ]; then
-    pr_info=$(printf " | \033]8;;%s\a#%s\033]8;;\a" "$pr_url" "$pr_number")
+    pr_info=$(printf " \033]8;;%s\a#%s\033]8;;\a" "$pr_url" "$pr_number")
   else
-    pr_info=" | #$pr_number"
+    pr_info=" #$pr_number"
   fi
 fi
 
@@ -391,6 +393,6 @@ if [ "$SHOW_USAGE" = 1 ]; then
 fi
 
 printf "%s\033[33m%s\033[0m" "$host_info" "$short_cwd"
-printf "%s\033[0m%s%s%s%s%s" "$git_branch" "$model_info" "$ctx_info" "$cache_info" "$pr_info" "$usage_info"
+printf "%s\033[0m%s%s%s%s%s" "$git_branch" "$pr_info" "$model_info" "$ctx_info" "$cache_info" "$usage_info"
 
 memo_prune
