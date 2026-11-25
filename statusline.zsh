@@ -14,10 +14,11 @@
 #           statusline usage off            # hide the account-usage bars
 #           statusline reset toggle         # flip the 5h reset countdown
 #           statusline budget on            # show "$14.32/day" on the $-cap
+#           statusline cache on             # show the prompt-cache countdown
 #           statusline <seg> [on|off|toggle|status]
 #
-# Segments: usage reset budget profile model effort ctx git pr host
-#           (cwd is always shown). `budget` is the one opt-in segment: OFF
+# Segments: usage reset budget profile model effort ctx cache git pr host
+#           (cwd is always shown). `budget` and `cache` are opt-in: OFF
 #           until switched on.
 #
 # Also exposed as the /sl slash command in Claude Code — see commands/sl.md.
@@ -29,9 +30,9 @@
 statusline() {
   emulate -L zsh
   local cfg="${CLAUDE_STATUSLINE_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/claude-statusline/config}"
-  local -a segs=(usage reset budget profile model effort ctx git pr host)
+  local -a segs=(usage reset budget profile model effort ctx cache git pr host)
   # Default when the config doesn't set a segment: shown, except opt-ins.
-  local -A dflt=(budget 0)
+  local -A dflt=(budget 0 cache 0)
   local -A desc=(
     usage   "account-usage bars (spend / rate limits)"
     reset   "5h-session reset countdown (inside usage; none on Ultra)"
@@ -40,6 +41,7 @@ statusline() {
     model   "model name"
     effort  "reasoning effort level (low … max)"
     ctx     "context-window %"
+    cache   "prompt-cache countdown, e.g. cache:52m07s / cache:cold 180k (opt-in)"
     git     "git branch + dirty marker"
     pr      "PR number/link"
     host    "hostname prefix (Linux hosts only)"
