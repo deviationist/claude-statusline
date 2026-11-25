@@ -30,7 +30,7 @@ and the conversation above it are drawn. Bars are green / amber / red by fill.)
 | `cache` | prompt-cache countdown: time until the conversation's cache goes cold (`cache:52m07s`, or the time it goes cold, `cache:until 14:32`; see [cache format](#cache-format); green → amber → red as it nears expiry), then `cache:cold 180k` with the tokens the next turn re-caches. A cold cache makes the next turn re-process the whole context, so this is a nudge to keep momentum. Read from Claude Code's own `prompt_cache` data (v2.1.251+), so it's exact, not estimated from the transcript. **Opt-in** (off by default) | `CLAUDE_STATUSLINE_CACHE` |
 | `usage` | account spend / rate-limit bars | `CLAUDE_STATUSLINE_USAGE` |
 | `reset` | 5h-session reset countdown (rendered inside `usage`; absent on Ultra, which has no 5h window) | `CLAUDE_STATUSLINE_RESET` |
-| `budget` | daily budget on the monthly `$`-cap — what's left ÷ days until it resets, today included (`$300` cap, `$142.50` spent, 11 days left → `$14.32/day`). **Opt-in** (off by default); rendered inside `usage`, only where a `$`-cap is | `CLAUDE_STATUSLINE_BUDGET` |
+| `budget` | daily budget on the monthly `$`-cap — what's left ÷ days until it resets, today included (`$300` cap, `$142.50` spent, 11 days left → `$14.32/day`); recalculated on every refresh, so it drops as you spend during the day ([how it's calculated](https://github.com/deviationist/claude-usage#daily-budget)). **Opt-in** (off by default); rendered inside `usage`, only where a `$`-cap is | `CLAUDE_STATUSLINE_BUDGET` |
 | `profile` | seat label (`Personal (Pro)`) ahead of the bars — needs [claude-profile](https://github.com/deviationist/claude-profile) | `CLAUDE_STATUSLINE_PROFILE` |
 
 Every row below is a real render, one per plan shape and toggle combination:
@@ -67,6 +67,56 @@ you get nothing at all — there'd be nothing to tell apart.
 ## Install
 
 Requirements: `zsh`, `jq`, `curl`. (The statusline script itself is POSIX `sh`; zsh is used for the toggle helper and the usage fetcher.)
+
+### With Claude Code
+
+Paste this into Claude Code:
+
+> Set up claude-statusline for me. Clone https://github.com/deviationist/claude-statusline
+> into the folder where I keep my git repos (ask me if you're not sure), run its
+> `install.sh --dry-run` and show me what it would change. When I say yes, run
+> `install.sh`.
+
+### With the installer
+
+From the folder where you keep your git repos:
+
+```sh
+git clone https://github.com/deviationist/claude-statusline.git
+claude-statusline/install.sh --dry-run   # show what would change
+claude-statusline/install.sh
+```
+
+The installer sets up the recommended configuration, the one the author runs
+day to day:
+
+- **`statusLine` in `settings.json`**, repainting every second
+  (`refreshInterval: 1`) so the cache countdown ticks. That's cheap: the slow
+  segments are cached (see [caching](#caching)).
+- **[claude-usage](https://github.com/deviationist/claude-usage)** cloned next
+  to this repo, for the usage bars.
+- **The `budget` and `cache` segments switched on.** Both are off by default.
+  `budget` only shows on accounts with a monthly `$`-cap.
+- **The `/sl` slash command** linked into the config dir.
+- **The `statusline` and `claude-usage` shell commands** sourced from `~/.zshrc`.
+
+Every step checks first and skips what's already done, so re-running is safe.
+`settings.json` is backed up before it's changed, and a segment you've already
+switched on or off keeps your choice. It sets up `$CLAUDE_CONFIG_DIR` or
+`~/.claude`, or every profile dir if you use
+[claude-profile](https://github.com/deviationist/claude-profile).
+
+| Flag | Effect |
+|---|---|
+| `--dry-run` | Show what would change, change nothing |
+| `--minimal` | Plain defaults: `budget` and `cache` off, `refreshInterval: 60` |
+| `--config-dir DIR` | Set up this config dir instead (repeatable) |
+| `--no-usage` | Don't clone claude-usage (no usage bars) |
+| `--no-shell` | Don't touch `~/.zshrc`; print the lines to add instead |
+
+Afterwards, restart open Claude Code sessions and open a new shell.
+
+### By hand
 
 The account-usage bars are provided by the companion
 [**claude-usage**](https://github.com/deviationist/claude-usage) project. Clone
