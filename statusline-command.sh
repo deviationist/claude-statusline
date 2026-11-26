@@ -110,7 +110,10 @@ eval "$(printf '%s' "$input" | jq -r '
 # Session effort level (low/medium/high/xhigh/max) is empty when the model
 # doesn't support the effort parameter, in which case the segment is skipped.
 
-now=$(date +%s)
+# The current time, once per render. CLAUDE_STATUSLINE_NOW overrides it so
+# the tests can pin the clock (a countdown checked against the real one
+# drifts if the machine is slow or sleeps mid-run).
+now=${CLAUDE_STATUSLINE_NOW:-$(date +%s)}
 
 # ---- memo: per-segment output cache ----------------------------------------
 # Claude Code re-runs this whole script on every repaint (refreshInterval can
@@ -147,7 +150,9 @@ memo() {
 "*}
   [ "$_mttl" -gt 0 ] 2>/dev/null || return 0
   mkdir -p "$memo_dir" 2>/dev/null
-  printf '%s\n%s\n%s\n' "$now" "$_mkey" "$memo_out" > "$_mf.$$" 2>/dev/null \
+  # Grouped so 2>/dev/null also covers the redirection itself failing (an
+  # unwritable memo dir): on a bare command, that error is printed first.
+  { printf '%s\n%s\n%s\n' "$now" "$_mkey" "$memo_out" > "$_mf.$$"; } 2>/dev/null \
     && mv -f "$_mf.$$" "$_mf" 2>/dev/null
 }
 
@@ -164,7 +169,7 @@ memo_prune() {
   _pts=0
   [ -f "$memo_dir/.pruned" ] && IFS= read -r _pts < "$memo_dir/.pruned"
   [ $(( now - ${_pts:-0} )) -ge 3600 ] 2>/dev/null || return 0
-  printf '%s\n' "$now" > "$memo_dir/.pruned" 2>/dev/null
+  { printf '%s\n' "$now" > "$memo_dir/.pruned"; } 2>/dev/null
   # Names are <session-id>.<segment>, or .<pid> on top while half-written.
   find "$memo_dir" -maxdepth 1 -type f \
     \( -name '????????-????-????-????-????????????.*' -o -name 'nosession.*' \) \

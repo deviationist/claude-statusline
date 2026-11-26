@@ -57,6 +57,7 @@ json() {   # [pr-json]
   printf '{"session_id":"%s","cwd":"%s","workspace":{"current_dir":"%s"},"model":{"display_name":"Opus 5.5"},"context_window":{"used_percentage":42}%s}' \
     "$SID" "$repo" "$repo" "${1:+,\"pr\":$1}"
 }
+shell_bin=bash   # what runs the status line; the cache section also tries sh
 render() {   # <json> [VAR=value …] → raw status line; $rc = exit status
   _j=$1; shift
   # A fresh memo dir per render (mktemp, since a counter wouldn't survive the
@@ -65,7 +66,7 @@ render() {   # <json> [VAR=value …] → raw status line; $rc = exit status
         CLAUDE_STATUSLINE_CONFIG="$tmp/sl-config" \
         CLAUDE_STATUSLINE_MEMO_DIR="$(mktemp -d "$tmp/memo.XXXXXX")" \
         CLAUDE_STATUSLINE_HOST=0 CLAUDE_STATUSLINE_USAGE=0 \
-        "$@" bash "$root/statusline-command.sh")
+        "$@" "$shell_bin" "$root/statusline-command.sh")
   rc=$?
   printf '%s' "$out"
   return 0
@@ -119,6 +120,122 @@ echo 0 > "$d/.pruned"; old "$d/$U.host"; chmod 500 "$d"
 render "$(json)" CLAUDE_STATUSLINE_MEMO_DIR="$d" >/dev/null
 check "exits 0 when the cleanup can't delete" "$rc" 0
 chmod 700 "$d"
+
+# ---- cache segment -----------------------------------------------------------
+# The prompt-cache countdown, from Claude Code's prompt_cache object. Run under
+# bash and sh (dash on Linux): it does arithmetic, `read` and date by hand.
+pcjson() {   # <prompt_cache json>
+  printf '{"session_id":"%s","cwd":"%s","model":{"display_name":"Opus 5.5"},"context_window":{"used_percentage":42},"prompt_cache":%s}' \
+    "$SID" "$repo" "$1"
+}
+# The clock is pinned (CLAUDE_STATUSLINE_NOW), so every countdown is exact.
+NOW=1800000000
+warm() {     # <ttl> <seconds left> → prompt_cache json
+  printf '{"caching_observed":true,"warm":true,"ttl":"%s","expires_at":%s}' "$1" $(( NOW + $2 ))
+}
+cold() {     # <recache tokens json>
+  printf '{"caching_observed":true,"warm":false,"ttl":"1h","expires_at":null,"recache_tokens_if_cold":%s}' "$1"
+}
+epoch_fmt() {   # <epoch> <strftime format>: BSD date, then GNU. Under env -i
+  # like the render, so both see the same time zone.
+  env -i PATH="$PATH" date -r "$1" +"$2" 2>/dev/null || env -i PATH="$PATH" date -d "@$1" +"$2"
+}
+cr() { render "$@" CLAUDE_STATUSLINE_CACHE=1 CLAUDE_STATUSLINE_NOW="$NOW"; }   # segment on, clock pinned
+G="${ESC}[0;32m" A="${ESC}[0;33m" R="${ESC}[0;31m" C="${ESC}[0;36m"
+line="$repo [main] | Opus 5.5 | ctx:42%"
+
+cache_tests() {
+  t=" ($shell_bin)"
+  hasnot "no prompt_cache, no segment$t" "$(plain "$(cr "$(json)")")" "cache:"
+  hasnot "caching not observed, no segment$t" \
+    "$(plain "$(cr "$(pcjson '{"caching_observed":false,"warm":false,"expires_at":null}')")")" "cache:"
+  check "1h, 52 min left: minutes and seconds$t" "$(plain "$(cr "$(pcjson "$(warm 1h 3130)")")")" "$line | cache:52m10s"
+  has "…in green$t" "$(cr "$(pcjson "$(warm 1h 3130)")")" "cache:${G}52m10s${ESC}[0m"
+  has "1h, 8 min left: amber$t"  "$(cr "$(pcjson "$(warm 1h 500)")")"  "cache:${A}8m"
+  has "1h, 2 min left: red$t"    "$(cr "$(pcjson "$(warm 1h 150)")")"  "cache:${R}2m"
+  has "5m, 4 min left: green$t"  "$(cr "$(pcjson "$(warm 5m 250)")")"  "cache:${G}4m"
+  has "5m, 1.5 min left: amber$t" "$(cr "$(pcjson "$(warm 5m 100)")")" "cache:${A}1m"
+  has "5m, 40 s left: red, 0m$t" "$(cr "$(pcjson "$(warm 5m 40)")")"   "cache:${R}0m"
+  check "seconds are two digits$t" "$(plain "$(cr "$(pcjson "$(warm 1h 3065)")")")" "$line | cache:51m05s"
+  check "an exact minute reads NNm00s$t" "$(plain "$(cr "$(pcjson "$(warm 5m 120)")")")" "$line | cache:2m00s"
+  check "past expires_at reads cold, even if warm is still true$t" \
+    "$(plain "$(cr "$(pcjson "$(warm 1h -5)")")")" "$line | cache:cold"
+  has "cold shows the re-cache tokens, in cyan$t" "$(cr "$(pcjson "$(cold 183412)")")" "cache:${C}cold 183k"
+  has "thousands round to the nearest k$t" "$(plain "$(cr "$(pcjson "$(cold 183600)")")")" "cache:cold 184k"
+  has "millions as M$t" "$(plain "$(cr "$(pcjson "$(cold 1240000)")")")" "cache:cold 1.2M"
+  has "under a thousand as is$t" "$(plain "$(cr "$(pcjson "$(cold 950)")")")" "cache:cold 950"
+  check "no re-cache count, just cold$t" "$(plain "$(cr "$(pcjson "$(cold null)")")")" "$line | cache:cold"
+  check "comes after ctx, before the PR$t" \
+    "$(plain "$(cr "$(printf '%s' "$(pcjson "$(cold null)")" | sed 's/}$/,"pr":{"number":7}}/')")")" \
+    "$repo [main] #7 | Opus 5.5 | ctx:42% | cache:cold"
+  check "format %mm: minutes only$t" \
+    "$(plain "$(cr "$(pcjson "$(warm 1h 3130)")" CLAUDE_STATUSLINE_CACHE_FORMAT='%mm')")" "$line | cache:52m"
+  check "format %M: two-digit minutes$t" \
+    "$(plain "$(cr "$(pcjson "$(warm 1h 500)")" CLAUDE_STATUSLINE_CACHE_FORMAT='%M min')")" "$line | cache:08 min"
+  check "format %% is a literal %, unknown tokens and a trailing % stay as typed$t" \
+    "$(plain "$(cr "$(pcjson "$(warm 1h 3130)")" CLAUDE_STATUSLINE_CACHE_FORMAT='%mm 100%% %q %')")" \
+    "$line | cache:52m 100% %q %"
+  e=$(( NOW + 3130 ))
+  w=$(printf '{"caching_observed":true,"warm":true,"ttl":"1h","expires_at":%s}' "$e")
+  check "clock style: until HH:MM by default$t" \
+    "$(plain "$(cr "$(pcjson "$w")" CLAUDE_STATUSLINE_CACHE_STYLE=clock)")" \
+    "$line | cache:until $(epoch_fmt "$e" '%H:%M')"
+  check "clock style takes a strftime format$t" \
+    "$(plain "$(cr "$(pcjson "$w")" CLAUDE_STATUSLINE_CACHE_STYLE=clock CLAUDE_STATUSLINE_CACHE_FORMAT='%H:%M:%S')")" \
+    "$line | cache:$(epoch_fmt "$e" '%H:%M:%S')"
+  check "unknown style falls back to relative$t" \
+    "$(plain "$(cr "$(pcjson "$(warm 1h 3130)")" CLAUDE_STATUSLINE_CACHE_STYLE=sundial)")" "$line | cache:52m10s"
+  cr "$(pcjson "$(warm 1h 3130)")" >/dev/null; check "exits 0$t" "$rc" 0
+}
+section "cache segment"
+for shell_bin in bash sh; do cache_tests; done
+shell_bin=bash
+
+# ---- memo (segment cache) ----------------------------------------------------
+# Same memo dir across renders here, to see what's reused and what isn't.
+section "memo"
+m="$tmp/memo-shared"; mkdir -p "$m"
+mr() { _mj=$1; shift; render "$_mj" CLAUDE_STATUSLINE_MEMO_DIR="$m" "$@"; }
+first=$(mr "$(json)")
+exists "a render stores the git segment" "$m/$SID.git"
+check "a cached render matches a fresh one" "$(mr "$(json)")" "$first"
+shell_bin=sh; check "…under sh too" "$(mr "$(json)")" "$first"; shell_bin=bash
+touch "$repo/untracked"
+check "within the TTL the git segment is reused (no * yet)" "$(plain "$(mr "$(json)")")" "$line"
+has "GIT_TTL=0 recomputes it" "$(plain "$(mr "$(json)" CLAUDE_STATUSLINE_GIT_TTL=0)")" "[main *]"
+{ echo 1; sed 1d "$m/$SID.git"; } > "$m/stale" && mv "$m/stale" "$m/$SID.git"
+has "past the TTL it is recomputed" "$(plain "$(mr "$(json)")")" "[main *]"
+rm -f "$repo/untracked"
+repo2="$tmp/repo2"; mkdir -p "$repo2"; git -C "$repo2" init -q
+git -C "$repo2" symbolic-ref HEAD refs/heads/other
+has "a new cwd in the same session isn't served the old repo's branch" \
+  "$(plain "$(mr "$(printf '%s' "$(json)" | sed "s#$repo#$repo2#g")")")" "[other]"
+# What makes refreshInterval 1 affordable: a cached repaint starts no git
+# and no zsh (claude-usage). Spies on PATH log each call, then run the real one.
+spy="$tmp/spy"; mkdir -p "$spy"; : > "$tmp/calls"
+for b in git zsh; do
+  printf '#!/bin/sh\necho %s >> "%s"\nexec "%s" "$@"\n' "$b" "$tmp/calls" "$(command -v "$b")" > "$spy/$b"
+  chmod +x "$spy/$b"
+done
+printf 'claude-usage() { print -r -- USAGE-BARS; }\n' > "$tmp/usage-stub.zsh"
+mp=$(mktemp -d "$tmp/memo.XXXXXX")
+spyr() { render "$(json)" CLAUDE_STATUSLINE_MEMO_DIR="$mp" PATH="$spy:$PATH" \
+           CLAUDE_STATUSLINE_USAGE=1 CLAUDE_USAGE_SCRIPT="$tmp/usage-stub.zsh"; }
+has "usage renders through claude-usage" "$(plain "$(spyr)")" "| USAGE-BARS"
+calls=$(sort -u "$tmp/calls" | tr '\n' ' ')
+check "a first render runs git and zsh" "$calls" "git zsh "
+: > "$tmp/calls"
+has "a cached repaint renders the same" "$(plain "$(spyr)")" "[main] | Opus 5.5 | ctx:42% | USAGE-BARS"
+check "a cached repaint starts no git and no zsh" "$(cat "$tmp/calls")" ""
+m0=$(mktemp -d "$tmp/memo.XXXXXX")
+render "$(json)" CLAUDE_STATUSLINE_MEMO_DIR="$m0" CLAUDE_STATUSLINE_GIT_TTL=0 >/dev/null
+gone "TTL 0 stores nothing" "$m0/$SID.git"
+mro=$(mktemp -d "$tmp/memo.XXXXXX"); chmod 500 "$mro"
+has "an unwritable memo dir still renders" \
+  "$(plain "$(render "$(json)" CLAUDE_STATUSLINE_MEMO_DIR="$mro" 2>"$tmp/stderr")")" "[main]"
+check "…and exits 0" "$rc" 0
+check "…and prints nothing to stderr" "$(cat "$tmp/stderr")" ""
+chmod 700 "$mro"
 
 # ---- installer -------------------------------------------------------------
 section "installer"
