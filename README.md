@@ -279,8 +279,12 @@ sh test/run.sh
 
 Hermetic: a fake `$HOME`, a scratch git repo and a stub claude-usage under a
 temp dir, each command run under `env -i`, no network. It covers the rendered
-line (segment order, PR link, toggles), the memo cleanup (what it deletes and
-keeps, the hourly gate, exit status) and the installer (dry run, re-runs,
+line (segment order, PR link, toggles), the `cache` segment (every colour
+state, cold, both styles, formats; under bash and sh, with the clock pinned),
+the segment cache (reuse within the TTL, the key, TTL 0, and that a cached
+repaint starts no `git` or `zsh`, which is what makes `refreshInterval: 1`
+cheap), the memo cleanup (what it deletes and keeps, the hourly gate, exit
+status) and the installer (dry run, re-runs,
 kept choices, `--minimal`, profile dirs, broken input). CI runs it on Linux
 and macOS.
 
